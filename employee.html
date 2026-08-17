@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบพนักงาน - ร้านล้างรถ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-24 md:pb-8 text-slate-800">
+
+    <!-- Container หลัก รองรับทั้ง มือถือ และ คอมพิวเตอร์ -->
+    <div class="max-w-md mx-auto md:max-w-4xl p-4 md:p-6">
+        
+        <!-- Header (แสดงเฉพาะบนจอคอมพิวเตอร์/หน้าจอใหญ่) -->
+        <header class="hidden md:flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800" id="user-email-header">กำลังโหลด...</h1>
+                    <p class="text-xs text-slate-400">พนักงานประจำร้าน</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 ml-auto">
+                <div class="flex items-center gap-2 border-l border-slate-200 pl-3">
+                    <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center overflow-hidden">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-700">โปรไฟล์</span>
+                </div>
+
+                <button id="btn-logout-desktop" class="flex items-center gap-2 text-sm bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl transition border border-red-100">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>ออกจากระบบ</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== TAB 1: ลงเวลา (ATTENDANCE) ==================== -->
+        <div id="tab-attendance" class="tab-content space-y-4">
+            <!-- การ์ดนาฬิกาและสถานะ -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-center">
+                <p id="current-date" class="text-slate-500 font-normal text-sm md:text-base">วัน...</p>
+                <h1 id="current-time" class="text-4xl md:text-5xl font-bold text-blue-600 my-2 tracking-tight">00:00:00</h1>
+                <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 text-xs md:text-sm px-3 py-1 rounded-full font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="attendance-status-text">สถานะ: ยังไม่ได้ลงเวลา</span>
+                </div>
+            </div>
+
+            <!-- ปุ่มลงเวลา เข้า/ออก -->
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btn-checkin" disabled class="bg-blue-600 text-white p-5 rounded-2xl shadow-md shadow-blue-200 flex flex-col items-center justify-center transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-right-to-bracket text-2xl mb-1"></i>
+                    <span class="font-semibold text-base">ลงเวลาเข้างาน</span>
+                    <span class="text-[10px] opacity-80 uppercase tracking-wider">Check-In</span>
+                </button>
+                <button id="btn-checkout" disabled class="bg-slate-200 text-slate-500 p-5 rounded-2xl flex flex-col items-center justify-center transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-right-from-bracket text-2xl mb-1"></i>
+                    <span class="font-semibold text-base">ลงเวลาออกงาน</span>
+                    <span class="text-[10px] opacity-80 uppercase tracking-wider">Check-Out</span>
+                </button>
+            </div>
+
+            <!-- กล่องแจ้งเตือนพิกัด GPS -->
+            <div id="gps-banner" class="bg-red-50 border border-red-100 p-3.5 rounded-2xl flex items-center gap-3 text-red-600 text-xs md:text-sm">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex-shrink-0 flex items-center justify-center">
+                    <i class="fa-solid fa-location-dot"></i>
+                </div>
+                <div id="gps-message" class="font-medium">
+                    กำลังตรวจสอบตำแหน่งพิกัดของคุณ...
+                </div>
+            </div>
+
+            <!-- การ์ดชั่วโมงทำงานรวม -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                        <i class="fa-regular fa-clock text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-800 text-sm">ชั่วโมงทำงานรวม</h4>
+                        <p class="text-xs text-slate-400" id="current-month-label">เดือนนี้</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-lg font-bold text-blue-600" id="total-hours">160/176</span>
+                    <span class="text-xs text-slate-400 ml-0.5">ชม.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: ใบลา (LEAVE REQUESTS) ==================== -->
+        <div id="tab-leave" class="tab-content hidden space-y-4">
+            <h3 class="font-bold text-slate-700 text-base">โควตาวันลาคงเหลือ</h3>
+            
+            <!-- การ์ดลาป่วย -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <p class="text-xs text-slate-400">ลาป่วย</p>
+                        <p class="text-xl font-bold text-blue-600">28 <span class="text-xs text-slate-400 font-normal">/ 30 วัน</span></p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+                        <i class="fa-solid fa-kit-medical"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-full rounded-full" style="width: 90%;"></div>
+                </div>
+            </div>
+
+            <!-- โควตากิจ/พักร้อน -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="text-amber-600 font-medium text-xs mb-1"><i class="fa-regular fa-calendar-check mr-1"></i> วันลาพักร้อน</div>
+                    <p class="text-lg font-bold text-slate-800">3 วัน</p>
+                    <p class="text-[10px] text-slate-400">จากทั้งหมด 6 วัน</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="text-amber-700 font-medium text-xs mb-1"><i class="fa-solid fa-briefcase mr-1"></i> ลากิจ</div>
+                    <p class="text-lg font-bold text-slate-800">2 วัน</p>
+                    <p class="text-[10px] text-slate-400">ใช้ไปแล้วปีนี้</p>
+                </div>
+            </div>
+
+            <!-- ปุ่มสร้างคำขอลา -->
+            <button id="btn-open-leave-modal" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+                <i class="fa-solid fa-circle-plus"></i> สร้างคำขอลาใหม่
+            </button>
+
+            <!-- รายการคำขอลาที่ผ่านมา -->
+            <div class="pt-2">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-bold text-slate-700 text-sm">รายการคำขอลาที่ผ่านมา</h4>
+                    <span class="text-xs text-blue-600 font-medium cursor-pointer">ดูทั้งหมด</span>
+                </div>
+                <div id="leave-history-list" class="space-y-2">
+                    <p class="text-xs text-center text-slate-400 py-4">กำลังดึงข้อมูล...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: ประวัติรายได้ (PAYROLL) ==================== -->
+        <div id="tab-history" class="tab-content hidden space-y-4">
+            <p class="text-xs text-slate-400">ประวัติรายได้</p>
+            <h3 class="font-bold text-slate-800 text-lg" id="payroll-month-title">เดือนนี้</h3>
+
+            <!-- การ์ดรายได้สุทธิประจำเดือน -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+                <p class="text-xs text-slate-400">รายได้สุทธิประจำเดือน</p>
+                <div class="text-3xl font-bold text-blue-600 my-1">฿15,200<span class="text-sm font-normal text-slate-400">.00</span></div>
+                <p class="text-xs text-emerald-600 font-medium flex items-center gap-1 mb-4">
+                    <i class="fa-solid fa-circle-check"></i> จ่ายแล้วเมื่อ 25 ส.ค.
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="bg-blue-600 text-white text-xs py-2.5 rounded-xl font-medium flex items-center justify-center gap-1.5"><i class="fa-regular fa-eye"></i> ดูสลิป</button>
+                    <button class="bg-blue-50 text-blue-600 text-xs py-2.5 rounded-xl font-medium flex items-center justify-center gap-1.5"><i class="fa-solid fa-download"></i> PDF</button>
+                </div>
+            </div>
+
+            <!-- ย้อนหลัง -->
+            <div class="pt-2">
+                <h4 class="font-bold text-slate-700 text-sm mb-3">ย้อนหลังปีนี้</h4>
+                <div class="space-y-2">
+                    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center">ก.ค.</div>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-800">กรกฎาคม</p>
+                                <p class="text-[10px] text-slate-400">จ่ายเมื่อ 25 ก.ค.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-slate-800">฿15,200</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: ตั้งค่า (SETTINGS) ==================== -->
+        <div id="tab-settings" class="tab-content hidden space-y-4">
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-base" id="user-email-settings">user@email.com</h3>
+                <p class="text-xs text-slate-400 mb-4">พนักงานประจำ</p>
+                <button id="btn-logout-mobile" class="w-full bg-red-50 text-red-600 py-3 rounded-2xl font-semibold text-sm hover:bg-red-100 transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> ออกจากระบบ
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal ฟอร์มยื่นใบลา (ซ่อนไว้ เริ่มต้น) -->
+    <div id="leave-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 space-y-4 animate-slide-up">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-base">ยื่นคำขอลาใหม่</h3>
+                <button id="btn-close-leave-modal" class="text-slate-400 text-xl">&times;</button>
+            </div>
+            <form id="leave-form" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ประเภทการลา</label>
+                    <select id="leave-type" class="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="ลาพักร้อน">ลาพักร้อน</option>
+                        <option value="ลาป่วย">ลาป่วย</option>
+                        <option value="ลากิจ">ลากิจ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">เหตุผลการลา</label>
+                    <textarea id="leave-reason" required class="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="ระบุเหตุผลการลา..."></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold text-sm shadow-md hover:bg-blue-700">ส่งใบลา</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- แถบเมนูด้านล่างสุด (Bottom Navigation Bar สำหรับมือถือ) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 max-w-md mx-auto md:max-w-4xl">
+        <button onclick="switchTab('attendance')" id="nav-attendance" class="nav-btn flex flex-col items-center gap-1 text-blue-600">
+            <i class="fa-solid fa-clock text-lg"></i>
+            <span class="text-[10px] font-medium">ลงเวลา</span>
+        </button>
+        <button onclick="switchTab('leave')" id="nav-leave" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa-solid fa-calendar-minus text-lg"></i>
+            <span class="text-[10px] font-medium">ใบลา</span>
+        </button>
+        <button onclick="switchTab('history')" id="nav-history" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+            <span class="text-[10px] font-medium">ประวัติ</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-[10px] font-medium">ตั้งค่า</span>
+        </button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlTeA0psxWxJ0cLMbX8WEOYFjzxseoVtI",
+            authDomain: "finalp4-8f4df.firebaseapp.com",
+            projectId: "finalp4-8f4df",
+            storageBucket: "finalp4-8f4df.firebasestorage.app",
+            messagingSenderId: "527045492081",
+            appId: "1:527045492081:web:34cfa5bd57304a6e47cad0",
+            measurementId: "G-M4YTT5H6R0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        // ==================== ตั้งค่าพิกัด GPS ของร้าน ====================
+        const SHOP_LAT = 13.7563;  // เปลี่ยนเป็น ละติจูด ร้าน
+        const SHOP_LNG = 100.5018; // เปลี่ยนเป็น ลองติจูด ร้าน
+        const MAX_DISTANCE_METERS = 100; // ระยะทางสูงสุดไม่เกิน 100 เมตร
+
+        // 1. ฟังก์ชันคำนวณระยะทางจากพิกัด (Haversine Formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // รัศมีโลกในหน่วยเมตร
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // คืนค่าระยะทางเป็นเมตร
+        }
+
+        // 2. เช็กพิกัด GPS ปัจจุบันของผู้ใช้
+        function checkLocation() {
+            const gpsBanner = document.getElementById('gps-banner');
+            const gpsMessage = document.getElementById('gps-message');
+            const btnCheckin = document.getElementById('btn-checkin');
+            const btnCheckout = document.getElementById('btn-checkout');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition((position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    const distance = calculateDistance(userLat, userLng, SHOP_LAT, SHOP_LNG);
+
+                    if (distance <= MAX_DISTANCE_METERS) {
+                        // อยู่ในระยะ 100 เมตร
+                        gpsBanner.className = "bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl flex items-center gap-3 text-emerald-600 text-xs md:text-sm";
+                        gpsMessage.innerHTML = `อยู่ในระยะที่ทำงานเรียบร้อย (${Math.round(distance)} เมตร)`;
+                        btnCheckin.disabled = false;
+                        btnCheckout.disabled = false;
+                        btnCheckin.className = "bg-blue-600 text-white p-5 rounded-2xl shadow-md shadow-blue-200 flex flex-col items-center justify-center transition active:scale-95 cursor-pointer";
+                        btnCheckout.className = "bg-slate-700 text-white p-5 rounded-2xl shadow-md flex flex-col items-center justify-center transition active:scale-95 cursor-pointer";
+                    } else {
+                        // ห่างเกิน 100 เมตร
+                        gpsBanner.className = "bg-red-50 border border-red-100 p-3.5 rounded-2xl flex items-center gap-3 text-red-600 text-xs md:text-sm";
+                        gpsMessage.innerHTML = `กรุณาเข้าใกล้รัศมีที่ทำงานเพื่อลงเวลา (ปัจจุบันห่าง ${Math.round(distance)} เมตร)`;
+                        btnCheckin.disabled = true;
+                        btnCheckout.disabled = true;
+                        btnCheckin.className = "bg-slate-200 text-slate-400 p-5 rounded-2xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed";
+                        btnCheckout.className = "bg-slate-200 text-slate-400 p-5 rounded-2xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed";
+                    }
+                }, (error) => {
+                    gpsMessage.innerHTML = "ไม่สามารถเข้าถึงตำแหน่ง GPS ของคุณได้ กรุณาเปิด GPS";
+                }, { enableHighAccuracy: true });
+            } else {
+                gpsMessage.innerHTML = "อุปกรณ์ของคุณไม่รองรับการระบุตำแหน่ง GPS";
+            }
+        }
+
+        // 3. ระบบนาฬิกาเรียลไทม์
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('th-TH', { hour12: false });
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('th-TH', dateOptions);
+
+            document.getElementById('current-time').innerText = timeStr;
+            document.getElementById('current-date').innerText = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 4. สลับแท็บ เมนูด้านล่าง
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-slate-400');
+            });
+            document.getElementById(`nav-${tabName}`).classList.remove('text-slate-400');
+            document.getElementById(`nav-${tabName}`).classList.add('text-blue-600');
+        };
+
+        // 5. ดึงข้อมูลผู้ใช้ และประวัติใบลา
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-email-header').innerText = user.email;
+                document.getElementById('user-email-settings').innerText = user.email;
+                checkLocation();
+                loadLeaveHistory();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 6. กดลงเวลาเข้า-ออกงาน
+        document.getElementById('btn-checkin').addEventListener('click', async () => {
+            await addDoc(collection(db, "attendances"), {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                type: 'check-in',
+                timestamp: new Date()
+            });
+            alert("ลงเวลาเข้างานเรียบร้อยแล้ว!");
+            document.getElementById('attendance-status-text').innerText = "สถานะ: ลงเวลาเข้างานแล้ว";
+        });
+
+        document.getElementById('btn-checkout').addEventListener('click', async () => {
+            await addDoc(collection(db, "attendances"), {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                type: 'check-out',
+                timestamp: new Date()
+            });
+            alert("ลงเวลาออกงานเรียบร้อยแล้ว!");
+            document.getElementById('attendance-status-text').innerText = "สถานะ: ลงเวลาออกงานแล้ว";
+        });
+
+        // 7. ระบบยื่นใบลา และดึงประวัติ
+        const modal = document.getElementById('leave-modal');
+        document.getElementById('btn-open-leave-modal').onclick = () => modal.classList.remove('hidden');
+        document.getElementById('btn-close-leave-modal').onclick = () => modal.classList.add('hidden');
+
+        document.getElementById('leave-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const type = document.getElementById('leave-type').value;
+            const reason = document.getElementById('leave-reason').value;
+
+            await addDoc(collection(db, "leave_requests"), {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                type: type,
+                reason: reason,
+                status: 'pending',
+                createdAt: new Date()
+            });
+
+            alert("ส่งใบลาเรียบร้อยแล้ว!");
+            modal.classList.add('hidden');
+            document.getElementById('leave-reason').value = "";
+            loadLeaveHistory();
+        });
+
+        async function loadLeaveHistory() {
+            const listContainer = document.getElementById('leave-history-list');
+            const q = query(collection(db, "leave_requests"), where("uid", "==", currentUser.uid));
+            const snap = await getDocs(q);
+            
+            listContainer.innerHTML = "";
+            if(snap.empty) {
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">ยังไม่มีรายการใบลา</p>`;
+                return;
+            }
+
+            snap.forEach(doc => {
+                const item = doc.data();
+                let statusBadge = `<span class="bg-slate-100 text-slate-600 text-[10px] px-2.5 py-1 rounded-full font-medium">รออนุมัติ</span>`;
+                if(item.status === 'approved') statusBadge = `<span class="bg-emerald-50 text-emerald-600 text-[10px] px-2.5 py-1 rounded-full font-medium">อนุมัติแล้ว</span>`;
+                if(item.status === 'rejected') statusBadge = `<span class="bg-red-50 text-red-600 text-[10px] px-2.5 py-1 rounded-full font-medium">ปฏิเสธ</span>`;
+
+                listContainer.innerHTML += `
+                    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center">
+                                <i class="fa-solid fa-umbrella text-sm"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-xs font-bold text-slate-800">${item.type}</h5>
+                                <p class="text-[10px] text-slate-400">${item.reason}</p>
+                            </div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                `;
+            });
+        }
+
+        // ปุ่มออกจากระบบ
+        const handleLogout = () => signOut(auth).then(() => window.location.href = 'index.html');
+        document.getElementById('btn-logout-desktop').onclick = handleLogout;
+        document.getElementById('btn-logout-mobile').onclick = handleLogout;
+    </script>
+
+<!-- หน้าต่าง Pop-up (Modal) -->
+<div id="leave-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl space-y-4">
+        
+        <!-- หัวข้อ Pop-up -->
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-base">ยื่นคำขอลาหยุด</h3>
+            <button id="btn-close-modal" type="button" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- ฟอร์มกรอกข้อมูลการลา -->
+        <form id="leave-form" class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">ประเภทการลา</label>
+                <select id="leave-type" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="ลาป่วย">ลาป่วย</option>
+                    <option value="ลากิจ">ลากิจ</option>
+                    <option value="ลาพักร้อน">ลาพักร้อน</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">วันที่เริ่มลา</label>
+                    <input type="date" id="leave-start-date" required class="w-full border border-slate-200 p-2.5 rounded-xl text-xs outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ถึงวันที่</label>
+                    <input type="date" id="leave-end-date" required class="w-full border border-slate-200 p-2.5 rounded-xl text-xs outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">เหตุผลการลา</label>
+                <textarea id="leave-reason" rows="3" required placeholder="ระบุเหตุผลการลา..." class="w-full border border-slate-200 p-2.5 rounded-xl text-xs outline-none"></textarea>
+            </div>
+
+            <!-- ปุ่มกดส่ง -->
+            <div class="flex gap-2 pt-2">
+                <button type="button" id="btn-cancel-modal" class="w-1/2 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition">ยกเลิก</button>
+                <button type="submit" class="w-1/2 bg-blue-600 text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition">ส่งคำขอลา</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

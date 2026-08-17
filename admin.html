@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการคาร์แคร์ - HR & Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font (Kanit) -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700 min-h-screen flex">
+
+    <!-- Sidebar เมนูด้านซ้าย -->
+    <aside class="w-64 bg-white border-r border-slate-100 flex flex-col justify-between hidden md:flex shrink-0">
+        <div>
+            <!-- โลโก้ร้าน -->
+            <div class="p-6 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-car-side"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 text-base leading-tight">ระบบจัดการคาร์แคร์</h1>
+                    <p class="text-[11px] text-slate-400">HR & Admin Portal</p>
+                </div>
+            </div>
+
+            <!-- เมนูหลัก -->
+            <nav class="px-4 space-y-1.5 mt-2">
+                <button id="nav-หน้าหลัก" onclick="switchTab('หน้าหลัก')" class="sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-blue-600 bg-blue-50 border-r-4 border-blue-600 transition">
+                    <i class="fa-solid fa-border-all w-5"></i> หน้าหลัก
+                </button>
+                <button id="nav-พนักงาน" onclick="switchTab('พนักงาน')" class="sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-users w-5"></i> พนักงาน
+                </button>
+                <button id="nav-ตารางงาน" onclick="switchTab('ตารางงาน')" class="sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-calendar-days w-5"></i> ตารางงาน
+                </button>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- พื้นที่เนื้อหาหลัก -->
+    <main class="flex-1 flex flex-col min-w-0">
+
+        <!-- Header แถบบน -->
+        <header class="h-20 bg-white border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center gap-3 w-96">
+                <div class="relative w-full">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" placeholder="ค้นหาพนักงานหรือรหัส..." class="w-full bg-slate-50 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-700 transition">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3 pl-4 border-l border-slate-100">
+                    <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <span id="admin-name" class="font-bold text-slate-800 text-sm">แอดมิน</span>
+                    <button id="btn-logout" class="bg-rose-50 text-rose-600 text-xs font-semibold px-3 py-1.5 rounded-xl hover:bg-rose-100 transition flex items-center gap-1.5 ml-2">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <div class="p-8 space-y-8 flex-1 overflow-y-auto">
+
+            <!-- TAB 1: หน้าหลัก (Dashboard) -->
+            <div id="tab-หน้าหลัก" class="tab-content space-y-8">
+                <!-- สถิติส่วนบน -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">พนักงานทั้งหมด</p>
+                            <h3 id="stat-total-emp" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">มาทำงานจริงวันนี้</p>
+                            <h3 id="stat-present-today" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">% พนักงานมาทำงาน</p>
+                            <h3 id="stat-present-percent" class="text-2xl font-bold text-blue-600 mt-1">0%</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">คำขอรออนุมัติ</p>
+                            <h3 id="stat-pending-leave" class="text-2xl font-bold text-amber-500 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- การ์ดอนุมัติคำขอลา -->
+                <div class="space-y-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-envelope-open-text text-blue-600"></i> คำขอลาที่รอดำเนินการ
+                    </h2>
+                    <div id="leave-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- JS Render -->
+                    </div>
+                </div>
+
+                <!-- ตารางคำขอการลาล่าสุด -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+                    <h2 class="text-base font-bold text-slate-800">ประวัติการยื่นใบลาล่าสุด</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="text-slate-400 border-b border-slate-100 font-medium">
+                                <tr>
+                                    <th class="pb-3">อีเมลพนักงาน</th>
+                                    <th class="pb-3">ประเภทการลา</th>
+                                    <th class="pb-3">เหตุผล</th>
+                                    <th class="pb-3">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-leaves-table" class="divide-y divide-slate-50">
+                                <!-- JS Render -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: รายชื่อพนักงาน -->
+            <div id="tab-พนักงาน" class="tab-content hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">รายชื่อพนักงานทั้งหมด</h2>
+                        <p class="text-xs text-slate-400">จัดการข้อมูลและสิทธิ์พนักงานในร้าน</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">ชื่อ-นามสกุล / อีเมล</th>
+                                <th class="p-4">รหัสพนักงาน</th>
+                                <th class="p-4">ตำแหน่ง</th>
+                                <th class="p-4">สิทธิ์ระบบ</th>
+                                <th class="p-4">สถานะ</th>
+                                <th class="p-4 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-table-body" class="divide-y divide-slate-50">
+                            <!-- JS Render -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: ตารางงาน / เวลาลงเข้างานจริงวันนี้ -->
+            <div id="tab-ตารางงาน" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">การลงเวลาทำงานวันนี้</h2>
+                    <p class="text-xs text-slate-400">บันทึกรายชื่อพนักงานที่มาลงเวลาจริง (แสดง 1 แถวต่อพนักงาน 1 คน)</p>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">เวลาเข้างานครั้งแรก</th>
+                                <th class="p-4">อีเมลพนักงาน</th>
+                                <th class="p-4">สถานะปัจจุบัน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body" class="divide-y divide-slate-50">
+                            <!-- JS Render -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- สคริปต์ทำงานระบบ Firebase และ Logic ทั้งหมด -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlTeA0psxWxJ0cLMbX8WEOYFjzxseoVtI",
+            authDomain: "finalp4-8f4df.firebaseapp.com",
+            projectId: "finalp4-8f4df",
+            storageBucket: "finalp4-8f4df.firebasestorage.app",
+            messagingSenderId: "527045492081",
+            appId: "1:527045492081:web:34cfa5bd57304a6e47cad0",
+            measurementId: "G-M4YTT5H6R0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let globalTotalEmployees = 0;
+
+        // 1. สลับแท็บ
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.sidebar-btn').forEach(btn => {
+                btn.className = "sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50 transition";
+            });
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if(activeBtn) {
+                activeBtn.className = "sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-blue-600 bg-blue-50 border-r-4 border-blue-600 transition";
+            }
+        };
+
+        // 2. เช็กสิทธิ์ Admin
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists() && userSnap.data().role === 'admin') {
+                    const adminData = userSnap.data();
+                    document.getElementById('admin-name').innerText = adminData.fullName || user.email.split('@')[0];
+                    
+                    await loadEmployeesData();
+                    await loadDashboardData();
+                    await loadAttendanceData();
+                } else {
+                    alert("เฉพาะ Admin เท่านั้นที่เข้าถึงหน้านี้ได้");
+                    window.location.href = 'index.html';
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 3. โหลดข้อมูลหน้า Dashboard & คำขอลา
+        async function loadDashboardData() {
+            const leaveSnap = await getDocs(collection(db, "leave_requests"));
+            const cardsContainer = document.getElementById('leave-cards-container');
+            const recentTable = document.getElementById('recent-leaves-table');
+            
+            cardsContainer.innerHTML = "";
+            recentTable.innerHTML = "";
+
+            let pendingCount = 0;
+
+            if (leaveSnap.empty) {
+                cardsContainer.innerHTML = `<p class="text-xs text-slate-400 py-4 col-span-3 text-center bg-white rounded-2xl border border-slate-100">ไม่มีคำขอลาที่รอดำเนินการ</p>`;
+            }
+
+            leaveSnap.forEach(docSnap => {
+                const item = docSnap.data();
+                const id = docSnap.id;
+
+                if (item.status === 'pending') {
+                    pendingCount++;
+                    cardsContainer.innerHTML += `
+                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">
+                                        ${item.email ? item.email[0].toUpperCase() : 'U'}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm">${item.email}</h4>
+                                        <p class="text-[10px] text-slate-400">พนักงานประจำ</p>
+                                    </div>
+                                </div>
+                                <span class="bg-amber-50 text-amber-700 text-[10px] font-semibold px-2.5 py-1 rounded-full">${item.type}</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl text-xs text-slate-600">
+                                <p class="font-medium text-slate-500 mb-0.5">เหตุผลการลา:</p>
+                                ${item.reason}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <button onclick="updateLeaveStatus('${id}', 'approved')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> อนุมัติ
+                                </button>
+                                <button onclick="updateLeaveStatus('${id}', 'rejected')" class="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark"></i> ปฏิเสธ
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let statusBadge = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">รออนุมัติ</span>`;
+                if(item.status === 'approved') statusBadge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">อนุมัติแล้ว</span>`;
+                if(item.status === 'rejected') statusBadge = `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">ปฏิเสธ</span>`;
+
+                recentTable.innerHTML += `
+                    <tr>
+                        <td class="py-3 font-medium text-slate-800">${item.email}</td>
+                        <td class="py-3 text-slate-500">${item.type}</td>
+                        <td class="py-3 text-slate-500">${item.reason}</td>
+                        <td class="py-3">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('stat-pending-leave').innerText = pendingCount;
+        }
+
+        // 4. อนุมัติ/ปฏิเสธ ใบลา
+        window.updateLeaveStatus = async function(id, newStatus) {
+            await updateDoc(doc(db, "leave_requests", id), { status: newStatus });
+            alert(newStatus === 'approved' ? "อนุมัติใบลาเรียบร้อยแล้ว" : "ปฏิเสธใบลาเรียบร้อยแล้ว");
+            loadDashboardData();
+        };
+
+        // 5. โหลดข้อมูลพนักงานทั้งหมด
+        async function loadEmployeesData() {
+            const userSnap = await getDocs(collection(db, "users"));
+            const tbody = document.getElementById('employee-table-body');
+            tbody.innerHTML = "";
+
+            let totalCount = 0;
+
+            userSnap.forEach((docSnap, index) => {
+                totalCount++;
+                const data = docSnap.data();
+                const uid = docSnap.id;
+                const empId = `EMP-${String(index + 1).padStart(3, '0')}`;
+                
+                const displayName = data.fullName || (data.email ? data.email.split('@')[0] : 'ไม่ระบุชื่อ');
+                const avatarChar = displayName.charAt(0).toUpperCase();
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50/50 transition">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs">
+                                    ${avatarChar}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-800">${displayName}</p>
+                                    <p class="text-[10px] text-slate-400">${data.email || '-'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4 font-mono text-slate-500">${empId}</td>
+                        <td class="p-4 text-slate-600">${data.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงานประจำร้าน'}</td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${data.role === 'admin' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}">
+                                ${data.role || 'employee'}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <span class="bg-emerald-50 text-emerald-600 text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 w-fit">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ปฏิบัติงานอยู่
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="editEmployeeName('${uid}', '${displayName}')" 
+                                class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="แก้ไขชื่อพนักงาน">
+                                <i class="fa-solid fa-pen-to-square text-sm"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            globalTotalEmployees = totalCount;
+            document.getElementById('stat-total-emp').innerText = totalCount;
+        }
+
+        // แก้ไขชื่อพนักงาน
+        window.editEmployeeName = async function(uid, currentName) {
+            const newName = prompt("กรอกชื่อ-นามสกุลใหม่ของพนักงาน:", currentName || "");
+            if (newName !== null && newName.trim() !== "") {
+                try {
+                    await updateDoc(doc(db, "users", uid), { fullName: newName.trim() });
+                    alert("อัปเดตชื่อพนักงานเรียบร้อยแล้ว!");
+                    loadEmployeesData();
+                } catch (error) {
+                    alert("ไม่สามารถอัปเดตชื่อได้: " + error.message);
+                }
+            }
+        };
+
+        // 6. โหลดคนมาทำงานจริงวันนี้ (1 คนแสดงเพียง 1 แถว)
+        async function loadAttendanceData() {
+            const snap = await getDocs(collection(db, "attendances"));
+            const tbody = document.getElementById('attendance-table-body');
+            tbody.innerHTML = "";
+
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+
+            if (snap.empty) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-400">ยังไม่มีข้อมูลลงเวลาในระบบ</td></tr>`;
+                updatePresentStats(0);
+                return;
+            }
+
+            const userAttendanceMap = {};
+
+            snap.forEach(docSnap => {
+                const item = docSnap.data();
+                const logDate = item.timestamp ? new Date(item.timestamp.seconds * 1000) : new Date();
+
+                if (logDate >= startOfToday && item.email) {
+                    const email = item.email;
+
+                    if (!userAttendanceMap[email]) {
+                        userAttendanceMap[email] = {
+                            email: email,
+                            firstCheckIn: item.type === 'check-in' ? logDate : null,
+                            latestLog: logDate,
+                            latestType: item.type,
+                            hasCheckedIn: item.type === 'check-in'
+                        };
+                    } else {
+                        const userRecord = userAttendanceMap[email];
+
+                        if (item.type === 'check-in') {
+                            userRecord.hasCheckedIn = true;
+                            if (!userRecord.firstCheckIn || logDate < userRecord.firstCheckIn) {
+                                userRecord.firstCheckIn = logDate;
+                            }
+                        }
+
+                        if (logDate > userRecord.latestLog) {
+                            userRecord.latestLog = logDate;
+                            userRecord.latestType = item.type;
+                        }
+                    }
+                }
+            });
+
+            const presentUsers = Object.values(userAttendanceMap).filter(u => u.hasCheckedIn);
+
+            if (presentUsers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-400">ยังไม่มีใครมาทำงานในวันนี้</td></tr>`;
+            } else {
+                presentUsers.sort((a, b) => (b.firstCheckIn || b.latestLog) - (a.firstCheckIn || a.latestLog));
+
+                presentUsers.forEach(user => {
+                    const timeDisplay = user.firstCheckIn 
+                        ? user.firstCheckIn.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+                        : user.latestLog.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+                    const isWorking = user.latestType === 'check-in';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50/50 transition">
+                            <td class="p-4 text-slate-500 font-mono text-xs">${timeDisplay} น.</td>
+                            <td class="p-4 font-semibold text-slate-800 text-xs">${user.email}</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isWorking ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'}">
+                                    ${isWorking ? 'กำลังทำงานอยู่' : 'ออกงานแล้ว'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            updatePresentStats(presentUsers.length);
+        }
+
+        // 7. คำนวณเปอร์เซ็นต์และยอดคนมาทำงาน
+        function updatePresentStats(presentCount) {
+            document.getElementById('stat-present-today').innerText = presentCount;
+
+            let percent = 0;
+            if (globalTotalEmployees > 0) {
+                percent = Math.round((presentCount / globalTotalEmployees) * 100);
+            }
+            document.getElementById('stat-present-percent').innerText = `${percent}%`;
+        }
+
+        // ปุ่มออกจากระบบ
+        document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => window.location.href = 'index.html');
+
+        // การแจ้งเตือนใบลา Real-time
+        function listenToLeaveRequests() {
+            const q = query(collection(db, "leave_requests"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && change.doc.data().status === 'pending') {
+                        showToastNotification(`มีคำขอลาใหม่จาก: ${change.doc.data().email}`);
+                    }
+                });
+            });
+        }
+
+        function showToastNotification(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed top-5 right-5 bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-lg font-medium text-sm z-50 animate-bounce";
+            toast.innerHTML = `<i class="fa-solid fa-bell mr-2"></i> ${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        listenToLeaveRequests();
+    </script>
+</body>
+</html>
