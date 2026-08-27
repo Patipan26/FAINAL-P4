@@ -137,10 +137,11 @@
                         <table class="w-full text-left text-xs">
                             <thead class="text-slate-400 border-b border-slate-100 font-medium">
                                 <tr>
-                                    <th class="pb-3">อีเมลพนักงาน</th>
+                                    <th class="pb-3">ชื่อ-นามสกุล / อีเมล</th>
                                     <th class="pb-3">ประเภทการลา</th>
                                     <th class="pb-3">เหตุผล</th>
                                     <th class="pb-3">สถานะ</th>
+                                    <th class="pb-3 text-center">จัดการสถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="recent-leaves-table" class="divide-y divide-slate-50">
@@ -191,7 +192,7 @@
                         <thead class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
                             <tr>
                                 <th class="p-4">เวลาเข้างานครั้งแรก</th>
-                                <th class="p-4">อีเมลพนักงาน</th>
+                                <th class="p-4">ชื่อ-นามสกุล / อีเมล</th>
                                 <th class="p-4">สถานะปัจจุบัน</th>
                             </tr>
                         </thead>
@@ -226,6 +227,7 @@
         const db = getFirestore(app);
 
         let globalTotalEmployees = 0;
+        let usersMap = {}; // Map สำหรับค้นหาชื่อพนักงานด้วย Email หรือ UID
 
         // 1. สลับแท็บ
         window.switchTab = function(tabName) {
@@ -265,7 +267,12 @@
 
         // 3. โหลดข้อมูลหน้า Dashboard & คำขอลา
         async function loadDashboardData() {
-            const leaveSnap = await getDocs(collection(db, "leave_requests"));
+            // รองรับการค้นหาจาก collection 'leave_requests' และ 'leaves'
+            let leaveSnap = await getDocs(collection(db, "leave_requests"));
+            if (leaveSnap.empty) {
+                leaveSnap = await getDocs(collection(db, "leaves"));
+            }
+
             const cardsContainer = document.getElementById('leave-cards-container');
             const recentTable = document.getElementById('recent-leaves-table');
             
@@ -281,32 +288,41 @@
             leaveSnap.forEach(docSnap => {
                 const item = docSnap.data();
                 const id = docSnap.id;
+                const email = item.email || item.userEmail || '';
+                const collectionName = docSnap.ref.parent.id; // ดึงชื่อ collection ที่แท้จริง
 
-                if (item.status === 'pending') {
+                // ดึงชื่อพนักงานจาก Map หรือจากฟิลด์ fullName
+                const displayName = usersMap[email.toLowerCase()] || item.fullName || item.userName || (email ? email.split('@')[0] : 'ไม่ระบุชื่อ');
+                const avatarChar = displayName.charAt(0).toUpperCase();
+                const leaveType = item.type || item.leaveType || 'ลาหยุด';
+                const reason = item.reason || '-';
+                const status = item.status || 'pending';
+
+                if (status === 'pending' || status === 'รออนุมัติ') {
                     pendingCount++;
                     cardsContainer.innerHTML += `
                         <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">
-                                        ${item.email ? item.email[0].toUpperCase() : 'U'}
+                                        ${avatarChar}
                                     </div>
                                     <div>
-                                        <h4 class="font-bold text-slate-800 text-sm">${item.email}</h4>
-                                        <p class="text-[10px] text-slate-400">พนักงานประจำ</p>
+                                        <h4 class="font-bold text-slate-800 text-sm">${displayName}</h4>
+                                        <p class="text-[10px] text-slate-400">${email || '-'}</p>
                                     </div>
                                 </div>
-                                <span class="bg-amber-50 text-amber-700 text-[10px] font-semibold px-2.5 py-1 rounded-full">${item.type}</span>
+                                <span class="bg-amber-50 text-amber-700 text-[10px] font-semibold px-2.5 py-1 rounded-full">${leaveType}</span>
                             </div>
                             <div class="bg-slate-50 p-3 rounded-xl text-xs text-slate-600">
                                 <p class="font-medium text-slate-500 mb-0.5">เหตุผลการลา:</p>
-                                ${item.reason}
+                                ${reason}
                             </div>
                             <div class="grid grid-cols-2 gap-2 pt-1">
-                                <button onclick="updateLeaveStatus('${id}', 'approved')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
+                                <button onclick="updateLeaveStatus('${id}', 'approved', '${collectionName}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
                                     <i class="fa-solid fa-circle-check"></i> อนุมัติ
                                 </button>
-                                <button onclick="updateLeaveStatus('${id}', 'rejected')" class="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
+                                <button onclick="updateLeaveStatus('${id}', 'rejected', '${collectionName}')" class="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 text-xs py-2 rounded-xl font-medium transition flex items-center justify-center gap-1">
                                     <i class="fa-solid fa-circle-xmark"></i> ปฏิเสธ
                                 </button>
                             </div>
@@ -314,16 +330,26 @@
                     `;
                 }
 
-                let statusBadge = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">รออนุมัติ</span>`;
-                if(item.status === 'approved') statusBadge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">อนุมัติแล้ว</span>`;
-                if(item.status === 'rejected') statusBadge = `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[10px] font-semibold">ปฏิเสธ</span>`;
+                let statusBadge = `<span class="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-[10px] font-semibold">รออนุมัติ</span>`;
+                if(status === 'approved' || status === 'อนุมัติแล้ว') statusBadge = `<span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-[10px] font-semibold">อนุมัติแล้ว</span>`;
+                if(status === 'rejected' || status === 'ปฏิเสธ') statusBadge = `<span class="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full text-[10px] font-semibold">ปฏิเสธ</span>`;
 
                 recentTable.innerHTML += `
-                    <tr>
-                        <td class="py-3 font-medium text-slate-800">${item.email}</td>
-                        <td class="py-3 text-slate-500">${item.type}</td>
-                        <td class="py-3 text-slate-500">${item.reason}</td>
+                    <tr class="hover:bg-slate-50/50 transition">
+                        <td class="py-3 font-medium text-slate-800">
+                            <div>${displayName}</div>
+                            <div class="text-[10px] text-slate-400 font-normal">${email || '-'}</div>
+                        </td>
+                        <td class="py-3 text-slate-500">${leaveType}</td>
+                        <td class="py-3 text-slate-500 max-w-xs truncate">${reason}</td>
                         <td class="py-3">${statusBadge}</td>
+                        <td class="py-3 text-center">
+                            <select onchange="updateLeaveStatus('${id}', this.value, '${collectionName}')" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 text-[11px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="pending" ${status === 'pending' || status === 'รออนุมัติ' ? 'selected' : ''}>รออนุมัติ</option>
+                                <option value="approved" ${status === 'approved' || status === 'อนุมัติแล้ว' ? 'selected' : ''}>อนุมัติแล้ว</option>
+                                <option value="rejected" ${status === 'rejected' || status === 'ปฏิเสธ' ? 'selected' : ''}>ปฏิเสธ</option>
+                            </select>
+                        </td>
                     </tr>
                 `;
             });
@@ -331,20 +357,31 @@
             document.getElementById('stat-pending-leave').innerText = pendingCount;
         }
 
-        // 4. อนุมัติ/ปฏิเสธ ใบลา
-        window.updateLeaveStatus = async function(id, newStatus) {
-            await updateDoc(doc(db, "leave_requests", id), { status: newStatus });
-            alert(newStatus === 'approved' ? "อนุมัติใบลาเรียบร้อยแล้ว" : "ปฏิเสธใบลาเรียบร้อยแล้ว");
-            loadDashboardData();
+        // 4. อนุมัติ/ปฏิเสธ/แก้ไขสถานะ ใบลา (แก้ไขได้ตลอดเวลา)
+        window.updateLeaveStatus = async function(id, newStatus, collectionName = 'leave_requests') {
+            try {
+                // อัปเดตสถานะในรูปแบบข้อความภาษาไทยหรืออังกฤษให้สอดคล้องกัน
+                let updatedStatus = newStatus;
+                if (newStatus === 'approved') updatedStatus = 'approved';
+                if (newStatus === 'rejected') updatedStatus = 'rejected';
+                if (newStatus === 'pending') updatedStatus = 'pending';
+
+                await updateDoc(doc(db, collectionName, id), { status: updatedStatus });
+                await loadDashboardData();
+            } catch (error) {
+                console.error("Error updating leave status:", error);
+                alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ: " + error.message);
+            }
         };
 
-        // 5. โหลดข้อมูลพนักงานทั้งหมด
+        // 5. โหลดข้อมูลพนักงานทั้งหมด (และบันทึกลง Map เพื่อใช้อ้างอิงชื่อจริง)
         async function loadEmployeesData() {
             const userSnap = await getDocs(collection(db, "users"));
             const tbody = document.getElementById('employee-table-body');
             tbody.innerHTML = "";
 
             let totalCount = 0;
+            usersMap = {}; // ล้างค่า map
 
             userSnap.forEach((docSnap, index) => {
                 totalCount++;
@@ -354,6 +391,12 @@
                 
                 const displayName = data.fullName || (data.email ? data.email.split('@')[0] : 'ไม่ระบุชื่อ');
                 const avatarChar = displayName.charAt(0).toUpperCase();
+
+                // บันทึกใส่ Map สำหรับแปลง Email -> Full Name
+                if (data.email) {
+                    usersMap[data.email.toLowerCase()] = displayName;
+                }
+                usersMap[uid] = displayName;
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50/50 transition">
@@ -401,14 +444,16 @@
                 try {
                     await updateDoc(doc(db, "users", uid), { fullName: newName.trim() });
                     alert("อัปเดตชื่อพนักงานเรียบร้อยแล้ว!");
-                    loadEmployeesData();
+                    await loadEmployeesData();
+                    await loadDashboardData();
+                    await loadAttendanceData();
                 } catch (error) {
                     alert("ไม่สามารถอัปเดตชื่อได้: " + error.message);
                 }
             }
         };
 
-        // 6. โหลดคนมาทำงานจริงวันนี้ (1 คนแสดงเพียง 1 แถว)
+        // 6. โหลดคนมาทำงานจริงวันนี้ (แสดงชื่อพนักงานแทนอีเมล)
         async function loadAttendanceData() {
             const snap = await getDocs(collection(db, "attendances"));
             const tbody = document.getElementById('attendance-table-body');
@@ -471,11 +516,15 @@
                         : user.latestLog.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
                     const isWorking = user.latestType === 'check-in';
+                    const displayName = usersMap[user.email.toLowerCase()] || user.email;
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-50/50 transition">
                             <td class="p-4 text-slate-500 font-mono text-xs">${timeDisplay} น.</td>
-                            <td class="p-4 font-semibold text-slate-800 text-xs">${user.email}</td>
+                            <td class="p-4 font-semibold text-slate-800 text-xs">
+                                <div>${displayName}</div>
+                                <div class="text-[10px] text-slate-400 font-normal">${user.email}</div>
+                            </td>
                             <td class="p-4">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isWorking ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'}">
                                     ${isWorking ? 'กำลังทำงานอยู่' : 'ออกงานแล้ว'}
@@ -508,8 +557,10 @@
             const q = query(collection(db, "leave_requests"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" && change.doc.data().status === 'pending') {
-                        showToastNotification(`มีคำขอลาใหม่จาก: ${change.doc.data().email}`);
+                    if (change.type === "added" && (change.doc.data().status === 'pending' || change.doc.data().status === 'รออนุมัติ')) {
+                        const email = change.doc.data().email || '';
+                        const name = usersMap[email.toLowerCase()] || email;
+                        showToastNotification(`มีคำขอลาใหม่จาก: ${name}`);
                     }
                 });
             });
